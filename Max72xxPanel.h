@@ -107,7 +107,7 @@ private:
 
   /* We keep track of the led-status for 8 devices in this array */
   byte *bitmap;
-  byte bitmapSize;
+  uint16_t bitmapSize;
 
   byte hDisplays;
   byte *matrixPosition;

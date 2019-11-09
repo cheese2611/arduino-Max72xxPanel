@@ -34,45 +34,44 @@
 #define OP_SHUTDOWN    12
 #define OP_DISPLAYTEST 15
 
-Max72xxPanel::Max72xxPanel(byte csPin, byte hDisplays, byte vDisplays) : Adafruit_GFX(hDisplays << 3, vDisplays << 3) {
+Max72xxPanel::Max72xxPanel(byte csPin, byte hDisplays, byte vDisplays) : Adafruit_GFX(((uint16_t)hDisplays) << 3, ((uint16_t)vDisplays) << 3) {
+	Max72xxPanel::SPI_CS = csPin;
 
-  Max72xxPanel::SPI_CS = csPin;
+	byte displays = hDisplays * vDisplays;
+	Max72xxPanel::hDisplays = hDisplays;
+	Max72xxPanel::bitmapSize = ((uint16_t)displays) << 3;
 
-  byte displays = hDisplays * vDisplays;
-  Max72xxPanel::hDisplays = hDisplays;
-	Max72xxPanel::bitmapSize = displays << 3;
+	Max72xxPanel::bitmap = (byte*)malloc(bitmapSize);
+	Max72xxPanel::matrixRotation = (byte*)malloc(displays);
+	Max72xxPanel::matrixPosition = (byte*)malloc(displays);
 
-  Max72xxPanel::bitmap = (byte*)malloc(bitmapSize);
-  Max72xxPanel::matrixRotation = (byte*)malloc(displays);
-  Max72xxPanel::matrixPosition = (byte*)malloc(displays);
+	for ( byte display = 0; display < displays; display++ ) {
+		matrixPosition[display] = display;
+		matrixRotation[display] = 0;
+	}
 
-  for ( byte display = 0; display < displays; display++ ) {
-  	matrixPosition[display] = display;
-  	matrixRotation[display] = 0;
-  }
+	SPI.begin();
+	//SPI.setBitOrder(MSBFIRST);
+	//SPI.setDataMode(SPI_MODE0);
+	pinMode(SPI_CS, OUTPUT);
 
-  SPI.begin();
-//SPI.setBitOrder(MSBFIRST);
-//SPI.setDataMode(SPI_MODE0);
-  pinMode(SPI_CS, OUTPUT);
+	// Clear the screen
+	fillScreen(0);
 
-  // Clear the screen
-  fillScreen(0);
+	// Make sure we are not in test mode
+	spiTransfer(OP_DISPLAYTEST, 0);
 
-  // Make sure we are not in test mode
-  spiTransfer(OP_DISPLAYTEST, 0);
+	// We need the multiplexer to scan all segments
+	spiTransfer(OP_SCANLIMIT, 7);
 
-  // We need the multiplexer to scan all segments
-  spiTransfer(OP_SCANLIMIT, 7);
+	// We don't want the multiplexer to decode segments for us
+	spiTransfer(OP_DECODEMODE, 0);
 
-  // We don't want the multiplexer to decode segments for us
-  spiTransfer(OP_DECODEMODE, 0);
+	// Enable display
+	shutdown(false);
 
-  // Enable display
-  shutdown(false);
-
-  // Set the brightness to a medium value
-  setIntensity(7);
+	// Set the brightness to a medium value
+	setIntensity(7);
 }
 
 void Max72xxPanel::setPosition(byte display, byte x, byte y) {
@@ -88,15 +87,15 @@ void Max72xxPanel::setRotation(uint8_t rotation) {
 }
 
 void Max72xxPanel::shutdown(boolean b) {
-  spiTransfer(OP_SHUTDOWN, b ? 0 : 1);
+	spiTransfer(OP_SHUTDOWN, b ? 0 : 1);
 }
 
 void Max72xxPanel::setIntensity(byte intensity) {
-  spiTransfer(OP_INTENSITY, intensity);
+	spiTransfer(OP_INTENSITY, intensity);
 }
 
 void Max72xxPanel::fillScreen(uint16_t color) {
-  memset(bitmap, color ? 0xff : 0, bitmapSize);
+	memset(bitmap, color ? 0xff : 0, bitmapSize);
 }
 
 void Max72xxPanel::drawPixel(int16_t xx, int16_t yy, uint16_t color) {
@@ -181,8 +180,8 @@ void Max72xxPanel::spiTransfer(byte opcode, byte data) {
 
 	// Now shift out the data, two bytes per display. The first byte is the opcode,
 	// the second byte the data.
-	byte end = opcode - OP_DIGIT0;
-	byte start = bitmapSize + end;
+	uint16_t end = opcode - OP_DIGIT0;
+	uint16_t start = bitmapSize + end;
 	do {
 		start -= 8;
 		SPI.transfer(opcode);
