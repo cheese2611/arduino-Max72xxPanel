@@ -41,6 +41,11 @@ public:
    */
   Max72xxPanel(byte csPin, byte hDisplays=1, byte vDisplays=1);
 
+  /*
+   * Initialize everything
+   */
+  void begin();
+
 	/*
 	 * Define how the displays are ordered. The first display (0)
 	 * is the one closest to the Arduino.

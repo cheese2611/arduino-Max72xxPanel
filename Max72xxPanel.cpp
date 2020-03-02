@@ -49,7 +49,9 @@ Max72xxPanel::Max72xxPanel(byte csPin, byte hDisplays, byte vDisplays) : Adafrui
 		matrixPosition[display] = display;
 		matrixRotation[display] = 0;
 	}
+}
 
+void Max72xxPanel::begin() {
 	SPI.begin();
 	//SPI.setBitOrder(MSBFIRST);
 	//SPI.setDataMode(SPI_MODE0);
